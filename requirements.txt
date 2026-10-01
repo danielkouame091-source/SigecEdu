@@ -1,3 +1,4 @@
+streamlit==1.38.0
 FastAPI==0.104.1
 SQLAlchemy==2.0.23
 Alembic==1.13.0
