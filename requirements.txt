@@ -1,5 +1,6 @@
-flask
-sqlalchemy
-pydantic
-gunicorn
-email-validator
+Flask==3.0.0
+SQLAlchemy==2.0.23
+python-dotenv==1.0.0
+pydantic==2.5.2
+email-validator==2.1.0
+gunicorn==21.2.0
