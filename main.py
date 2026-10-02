@@ -2,11 +2,25 @@ from flask import Flask, jsonify
 from sqlalchemy import text
 from database import SessionLocal
 
+# Initialisation de l'application Flask
 app = Flask(__name__)
+
+@app.route("/", methods=["GET"])
+def index():
+    """Route racine pour indiquer que l'API est en ligne et lister les points d'accès."""
+    return jsonify({
+        "app": "SigecEdu API Backend",
+        "status": "online",
+        "version": "1.0.0",
+        "endpoints": {
+            "health_check": "/health",
+            "eleves": "/api/eleves"
+        }
+    }), 200
 
 @app.route("/health", methods=["GET"])
 def health_check():
-    """Vérifie l'état de l'API et capture précisément l'erreur DB si elle existe."""
+    """Vérifie l'intégrité de l'API et la bonne connexion au serveur de base de données."""
     db = None
     try:
         db = SessionLocal()
@@ -14,13 +28,13 @@ def health_check():
         db.execute(text("SELECT 1"))
         return jsonify({
             "status": "success",
-            "message": "API Education CI opérationnelle et connectée à PostgreSQL !"
+            "message": "API SigecEdu opérationnelle et connectée à la base de données !"
         }), 200
     except Exception as e:
-        # On retourne un JSON propre avec l'erreur exacte au lieu de crasher en 500 brut
+        # Capture précise de l'erreur sans crasher brutalement le serveur (Code 500 contrôlé)
         return jsonify({
             "status": "error",
-            "message": f"Échec de la base de données : {str(e)}"
+            "message": f"Échec critique de la base de données : {str(e)}"
         }), 500
     finally:
         if db:
@@ -28,11 +42,12 @@ def health_check():
 
 @app.route("/api/eleves", methods=["GET"])
 def lister_eleves():
-    """Récupère la liste de tous les élèves."""
+    """Récupère et sérialise la liste de tous les élèves enregistrés."""
     db = SessionLocal()
     try:
         from models import Eleve
         eleves = db.query(Eleve).all()
+        
         resultat = [
             {
                 "id": e.id,
@@ -45,11 +60,19 @@ def lister_eleves():
             }
             for e in eleves
         ]
-        return jsonify({"status": "success", "data": resultat}), 200
+        return jsonify({
+            "status": "success",
+            "count": len(resultat),
+            "data": resultat
+        }), 200
     except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
+        return jsonify({
+            "status": "error",
+            "message": f"Erreur lors de la récupération des élèves : {str(e)}"
+        }), 500
     finally:
         db.close()
 
 if __name__ == "__main__":
+    # Exécution locale pour le développement (Gunicorn prend le relais en production sur Render)
     app.run(host="0.0.0.0", port=5001, debug=True)
