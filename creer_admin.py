@@ -1,0 +1,45 @@
+import sys
+import getpass
+from database import SessionLocal
+from models import Utilisateur
+from werkzeug.security import generate_password_hash
+
+def creer_admin(email):
+    db = SessionLocal()
+    try:
+        # Vérifier si l'utilisateur existe déjà
+        existing = db.query(Utilisateur).filter(Utilisateur.email == email).first()
+        if existing:
+            print(f"Erreur : Un utilisateur avec l'email {email} existe déjà.")
+            return
+
+        password = getpass.getpass("Mot de passe administrateur (12 caractères min) : ")
+        if len(password) < 12:
+            print("Erreur : Le mot de passe doit contenir au moins 12 caractères.")
+            return
+
+        hashed_password = generate_password_hash(password)
+        
+        admin_user = Utilisateur(
+            email=email,
+            hashed_password=hashed_password,
+            role="ADMIN",
+            nom="Admin",
+            prenoms="System",
+            is_active=True
+        )
+        
+        db.add(admin_user)
+        db.commit()
+        print(f"Succès : Administrateur {email} créé avec succès !")
+    except Exception as e:
+        db.rollback()
+        print(f"Erreur lors de la création : {e}")
+    finally:
+        db.close()
+
+if __name__ == "__main__":
+    if len(sys.argv) < 2:
+        print("Usage: python creer_admin.py <email>")
+        sys.exit(1)
+    creer_admin(sys.argv[1])
