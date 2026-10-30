@@ -1,3 +1,4 @@
+"""SigecEdu API: a small Flask web service to manage students and their attendance."""
 import os
 from flask import Flask, jsonify, request
 from sqlalchemy import text
@@ -5,57 +6,62 @@ from sqlalchemy.exc import IntegrityError
 from dotenv import load_dotenv
 
 from database import engine, SessionLocal, Base
-from models import Eleve, StatutAssiduiteEnum
+from enums import StatutAssiduite
+from models import Eleve
 
-# Charger les variables d'environnement
+# Load environment variables
 load_dotenv()
 
-# Initialisation de l'application Flask
+# Create the Flask application
 app = Flask(__name__)
 
-# Création automatique des tables dans la base de données au démarrage
+# Create the database tables automatically at start-up (nothing happens if they already exist)
 Base.metadata.create_all(bind=engine)
 
 def get_enum_value(val):
+    """Return the readable text of an enumeration value (for example "Regular")."""
     if hasattr(val, "value"):
         return val.value
     return val
 
 @app.route("/", methods=["GET"])
 def index():
+    """API home page: name, status and list of available endpoints."""
     return jsonify({
         "app": "SigecEdu API Backend",
         "status": "online",
         "version": "1.0.0",
         "endpoints": {
             "health_check": "GET /health",
-            "lister_eleves": "GET /api/eleves",
-            "recuperer_eleve": "GET /api/eleves/<id>",
-            "creer_eleve": "POST /api/eleves",
-            "modifier_eleve": "PUT /api/eleves/<id>",
-            "supprimer_eleve": "DELETE /api/eleves/<id>"
+            "list_students": "GET /api/eleves",
+            "get_student": "GET /api/eleves/<id>",
+            "create_student": "POST /api/eleves",
+            "update_student": "PUT /api/eleves/<id>",
+            "delete_student": "DELETE /api/eleves/<id>"
         }
     }), 200
 
 @app.route("/health", methods=["GET"])
 def health_check():
+    """Check that the API is alive and can reach the database."""
     db = SessionLocal()
     try:
         db.execute(text("SELECT 1"))
         return jsonify({
             "status": "success",
-            "message": "API SigecEdu opérationnelle et connectée à la base de données !"
+            "message": "SigecEdu API is running and connected to the database!"
         }), 200
     except Exception as e:
         return jsonify({
             "status": "error",
-            "message": f"Échec critique de la base de données : {str(e)}"
+            "message": f"Critical database failure: {str(e)}"
         }), 500
     finally:
         db.close()
 
 @app.route("/api/eleves", methods=["GET"])
 def lister_eleves():
+    """Return all students."""
     db = SessionLocal()
     try:
         eleves = db.query(Eleve).all()
@@ -79,11 +85,12 @@ def lister_eleves():
 
 @app.route("/api/eleves/<int:eleve_id>", methods=["GET"])
 def recuperer_eleve(eleve_id):
+    """Return one student by its database id."""
     db = SessionLocal()
     try:
         eleve = db.query(Eleve).filter(Eleve.id == eleve_id).first()
         if not eleve:
-            return jsonify({"status": "error", "message": "Élève introuvable"}), 404
+            return jsonify({"status": "error", "message": "Student not found"}), 404
         
         return jsonify({
             "status": "success",
@@ -104,22 +111,23 @@ def recuperer_eleve(eleve_id):
 
 @app.route("/api/eleves", methods=["POST"])
 def creer_eleve():
+    """Create a student. Required JSON fields: matricule, nom, prenoms."""
     donnees = request.get_json()
     if not donnees:
-        return jsonify({"status": "error", "message": "Aucune donnée fournie"}), 400
+        return jsonify({"status": "error", "message": "No data provided"}), 400
 
     for champ in ["matricule", "nom", "prenoms"]:
         if champ not in donnees or not str(donnees[champ]).strip():
-            return jsonify({"status": "error", "message": f"Le champ '{champ}' est obligatoire."}), 400
+            return jsonify({"status": "error", "message": f"The field '{champ}' is required."}), 400
 
     db = SessionLocal()
     try:
-        statut = StatutAssiduiteEnum.REGULIER
+        statut = StatutAssiduite.REGULIER
         if "statut_assiduite" in donnees:
             try:
-                statut = StatutAssiduiteEnum(donnees["statut_assiduite"])
+                statut = StatutAssiduite(donnees["statut_assiduite"])
             except ValueError:
-                return jsonify({"status": "error", "message": "Statut d'assiduité invalide."}), 422
+                return jsonify({"status": "error", "message": "Invalid attendance status. Allowed values: Regular, Irregular, Absent, Excluded."}), 422
 
         nouvel_eleve = Eleve(
             matricule=donnees["matricule"].strip().upper(),
@@ -136,16 +144,16 @@ def creer_eleve():
         
         return jsonify({
             "status": "success",
-            "message": "Élève créé avec succès",
+            "message": "Student created successfully",
             "data": {"id": nouvel_eleve.id, "matricule": nouvel_eleve.matricule}
         }), 201
 
     except IntegrityError:
         db.rollback()
-        return jsonify({"status": "error", "message": "Un élève avec ce matricule existe déjà."}), 409
+        return jsonify({"status": "error", "message": "A student with this ID (matricule) already exists."}), 409
     except ValueError:
         db.rollback()
-        return jsonify({"status": "error", "message": "Type de donnée invalide."}), 422
+        return jsonify({"status": "error", "message": "Invalid data type."}), 422
     except Exception as e:
         db.rollback()
         return jsonify({"status": "error", "message": str(e)}), 500
@@ -154,15 +162,16 @@ def creer_eleve():
 
 @app.route("/api/eleves/<int:eleve_id>", methods=["PUT"])
 def modifier_eleve(eleve_id):
+    """Update the fields sent in the JSON body (the others stay unchanged)."""
     donnees = request.get_json()
     if not donnees:
-        return jsonify({"status": "error", "message": "Aucune donnée fournie pour la mise à jour."}), 400
+        return jsonify({"status": "error", "message": "No data provided for the update."}), 400
 
     db = SessionLocal()
     try:
         eleve = db.query(Eleve).filter(Eleve.id == eleve_id).first()
         if not eleve:
-            return jsonify({"status": "error", "message": "Élève introuvable"}), 404
+            return jsonify({"status": "error", "message": "Student not found"}), 404
 
         if "matricule" in donnees:
             eleve.matricule = donnees["matricule"].strip().upper()
@@ -176,16 +185,16 @@ def modifier_eleve(eleve_id):
             eleve.eligible_examen = bool(donnees["eligible_examen"])
         if "statut_assiduite" in donnees:
             try:
-                eleve.statut_assiduite = StatutAssiduiteEnum(donnees["statut_assiduite"])
+                eleve.statut_assiduite = StatutAssiduite(donnees["statut_assiduite"])
             except ValueError:
-                return jsonify({"status": "error", "message": "Statut d'assiduité invalide."}), 422
+                return jsonify({"status": "error", "message": "Invalid attendance status. Allowed values: Regular, Irregular, Absent, Excluded."}), 422
 
         db.commit()
-        return jsonify({"status": "success", "message": "Informations de l'élève mises à jour avec succès"}), 200
+        return jsonify({"status": "success", "message": "Student information updated successfully"}), 200
 
     except IntegrityError:
         db.rollback()
-        return jsonify({"status": "error", "message": "Ce matricule est déjà utilisé par un autre élève."}), 409
+        return jsonify({"status": "error", "message": "This ID (matricule) is already used by another student."}), 409
     except Exception as e:
         db.rollback()
         return jsonify({"status": "error", "message": str(e)}), 500
@@ -194,15 +203,16 @@ def modifier_eleve(eleve_id):
 
 @app.route("/api/eleves/<int:eleve_id>", methods=["DELETE"])
 def supprimer_eleve(eleve_id):
+    """Delete a student."""
     db = SessionLocal()
     try:
         eleve = db.query(Eleve).filter(Eleve.id == eleve_id).first()
         if not eleve:
-            return jsonify({"status": "error", "message": "Élève introuvable"}), 404
+            return jsonify({"status": "error", "message": "Student not found"}), 404
 
         db.delete(eleve)
         db.commit()
-        return jsonify({"status": "success", "message": f"L'élève avec l'ID {eleve_id} a été supprimé."}), 200
+        return jsonify({"status": "success", "message": f"The student with ID {eleve_id} has been deleted."}), 200
     except Exception as e:
         db.rollback()
         return jsonify({"status": "error", "message": str(e)}), 500
@@ -211,4 +221,4 @@ def supprimer_eleve(eleve_id):
 
 if __name__ == "__main__":
     debug_mode = os.getenv("FLASK_DEBUG", "0") == "1"
-    app.run(host="0.0.0.0", port=5000, debug=debug_mode)
+    app.run(host="0.0.0.0", port=int(os.getenv("PORT", "5000")), debug=debug_mode)
