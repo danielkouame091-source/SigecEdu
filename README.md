@@ -140,6 +140,7 @@ python creer_admin.py admin@example.com
 - Teachers (`Enseignant`), users (`Utilisateur`) and presence/session enums exist in the data model but have **no API endpoints yet**.
 - No automatic computation of `taux_assiduite` from real sessions yet: today the rate is entered or sent by the client.
 - No real data: the seed students are fictional.
+- A machine-learning mini project (early warning + falsified-register detection) is in `mini_project/`.
 - Only two automatic checks exist (`test_api.py`, `check_assiduite.py`). Unit tests with `pytest` are a good next step.
 
 ## 9. Technologies

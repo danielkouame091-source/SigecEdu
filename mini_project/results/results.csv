@@ -1,0 +1,9 @@
+model,ROC_AUC,avg_precision,precision,recall,F1
+Logistic Regression,0.75,0.666,0.515,0.622,0.563
+Neural network (MLP),0.73,0.648,0.658,0.432,0.522
+Random Forest,0.729,0.647,0.535,0.586,0.559
+Baseline B: simple rule (rate < 75 %),0.761,0.647,0.691,0.464,0.555
+KNN,0.716,0.643,0.843,0.338,0.482
+SVM (RBF),0.737,0.608,0.613,0.5,0.551
+Decision Tree,0.738,0.592,0.54,0.55,0.545
+Baseline A: nobody at risk,0.5,0.296,0.0,0.0,0.0
