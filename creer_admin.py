@@ -1,3 +1,5 @@
+"""Create the first administrator account.
+Usage:  python creer_admin.py admin@example.com   (the password is asked in the terminal, never stored in clear)."""
 import sys
 import getpass
 from database import SessionLocal
@@ -7,15 +9,15 @@ from werkzeug.security import generate_password_hash
 def creer_admin(email):
     db = SessionLocal()
     try:
-        # Vérifier si l'utilisateur existe déjà
+        # Stop if this e-mail is already registered
         existing = db.query(Utilisateur).filter(Utilisateur.email == email).first()
         if existing:
-            print(f"Erreur : Un utilisateur avec l'email {email} existe déjà.")
+            print(f"Error: a user with the e-mail {email} already exists.")
             return
 
-        password = getpass.getpass("Mot de passe administrateur (12 caractères min) : ")
+        password = getpass.getpass("Administrator password (12 characters minimum): ")
         if len(password) < 12:
-            print("Erreur : Le mot de passe doit contenir au moins 12 caractères.")
+            print("Error: the password must contain at least 12 characters.")
             return
 
         hashed_password = generate_password_hash(password)
@@ -31,10 +33,10 @@ def creer_admin(email):
         
         db.add(admin_user)
         db.commit()
-        print(f"Succès : Administrateur {email} créé avec succès !")
+        print(f"Success: administrator {email} created!")
     except Exception as e:
         db.rollback()
-        print(f"Erreur lors de la création : {e}")
+        print(f"Error while creating the account: {e}")
     finally:
         db.close()
 

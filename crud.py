@@ -1,3 +1,4 @@
+"""Small reusable database helpers (find / create students and teachers)."""
 from sqlalchemy.orm import Session
 import models
 import schemas
