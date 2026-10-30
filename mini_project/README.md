@@ -1,4 +1,4 @@
-# Mini Project — Machine Learning & Deep Learning on SigecEdu
+# 🤖 Mini Project — Machine Learning & Deep Learning on SigecEdu
 ### Early warning of exam exclusion and detection of falsified attendance registers
 
 **Author:** Kouassi Kouame Daniel · **UID:** 25MDA10119
@@ -6,7 +6,7 @@
 
 ---
 
-## 1. Context and problem
+## 📌 1. Project overview and problem
 SigecEdu is a back-end that records student attendance in Côte d'Ivoire and decides who may sit the exam (rule: at least **75 %** attendance, see `check_assiduite.py`). This mini project adds the **intelligence** on top of those records, with two questions:
 
 | | Question | Type of learning |
@@ -14,6 +14,17 @@ SigecEdu is a back-end that records student attendance in Côte d'Ivoire and dec
 | **A** | After 6 weeks of class, which students will fall **below 75 %** in the next 6 weeks, and so risk exclusion? (a warning early enough to act) | Supervised classification + deep learning |
 | **B** | Which class registers look **falsified** (too perfect to be true)? (the anti-corruption side of SigecEdu) | Unsupervised anomaly detection |
 | **C** | Do students form natural **profiles**? | Unsupervised clustering (PCA + K-Means) |
+
+## 🎯 Objectives
+
+- Predict, after 6 weeks, which students will fall below 75 % attendance.
+- Compare classical machine learning with a neural network, against honest baselines.
+- Detect falsified attendance registers without labels.
+- Find natural student profiles (clustering).
+
+## 🛠️ Technologies used
+
+Python · Scikit-learn (Logistic Regression, KNN, Decision Tree, Random Forest, SVM, MLP neural network, Isolation Forest, PCA, K-Means) · Pandas and NumPy · Matplotlib.
 
 ## 2. Data — and its main limit
 No real school data is available, so everything is **simulated** by `simulate_students()` in the script: 3,000 students, 12 weeks of weekly attendance, and 11 features known after week 6: attendance rate, last-2-weeks rate, trend, worst week, number of weeks below 60 %, distance to school, last year's rate, household poverty index, class size, teacher-absence rate, grade.
@@ -68,7 +79,7 @@ python3 mini_project/mini_project_ml_dl.py      # about 1 minute
 ```
 Outputs: `mini_project/results/results.csv` and 9 PNG figures. Random seed: 42.
 
-## 8. Files
+## 📁 8. Repository structure
 ```
 mini_project/
 ├── README.md                  ← this report
